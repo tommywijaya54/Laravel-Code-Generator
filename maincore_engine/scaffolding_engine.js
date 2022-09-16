@@ -26,23 +26,32 @@ if(!ApplicationStructure){
 let AppCode = {};
 
 // Column Format List for Migration
-const AutoColumnFormatList = {
-    'name' : 'string',
-    'phone' : 'string',
-    'address' : 'string',
-    'password' : 'string',
-    'note' : 'text',
-    'join_date' : 'date',
-    'exit_date' : 'date',
-    'date' : 'date',
-    'day' : 'date',
-    'relative_name' : 'string',
-    'relative_phone' : 'string',
-    'relative_phone' : 'text',
-    'user_id' : 'integer',
-    'role' : 'string',
-}
+function gnFormatList(List){
+    let Ob = {};
+    for (var key in List) {
+        const val = List[key];
+        Ob[key] = val.split(":")[0];
+    };
+    return Ob;
+};
+function gnFactoryFormatList(List){
+    let Ob = {};
+    for (var key in List) {
+        const val = List[key];
+        var factoryCode = val.split(":")[1];
+                
+        if(factoryCode.includes('getRandom')){
+                
+        }
 
+        if(factoryCode){
+            Ob[key] = factoryCode;
+        }
+    }
+    return Ob;
+};
+const FactoryFormatList = gnFactoryFormatList(AFormatList);
+const FormatList = gnFormatList(AFormatList);
 const PHPFunction = {
     runSeederInBatch:`
 function runSeederInBatch ($seeder,$column,$tablename){
@@ -59,7 +68,7 @@ function runSeederInBatch ($seeder,$column,$tablename){
 }
 
 const AutoEngine = {
-    ColumnFormatList : AutoColumnFormatList,
+    ColumnFormatList : FormatList,
     process : {
         column : function (ColumnString) {
             const cArr = ColumnString.split(":");
@@ -78,7 +87,7 @@ const AutoEngine = {
             }else if(c.name.includes("_date")){
                 c.type = 'date';
             }else{
-                c.type = AutoColumnFormatList[c.name] ? AutoColumnFormatList[c.name] : 'string';
+                c.type = FormatList[c.name] ? FormatList[c.name] : 'string';
             }
 
             return c;
@@ -86,10 +95,25 @@ const AutoEngine = {
         database : (Database) => {
             let NewDatabase = {...Database};
             // adding column array in table;
+
             NewDatabase.table.forEach(function(table){
+                table.model = capitalize(table.name);
+                table.varname = table.name;
                 table.columnArray = table.column.map(function(c){
                     return c.split(":")[0];
                 })
+
+                table.route = [];
+                table.controller.forEach((fn)=>{
+                    table.route.push(fn);
+                    if(fn === 'create'){
+                        table.route.push('store');;
+                    }
+                    if(fn === 'edit'){
+                        table.route.push('update');
+                    }
+                });
+
                 return table;
             });
 
@@ -105,7 +129,8 @@ const Tables = Database.table;
 AppCode = {
     migration:{},
     seeder:{},
-    factory:{},
+    controller:{},
+    artisan:{}
 }
 
 // Create Migration & Seeder Code
@@ -128,47 +153,193 @@ Tables.forEach(function(table){
     }
     AppCode.migration[table.name] = gnMigrateCode(table);
 
-    function gnSeederCode (seeder,table,option){
-        let code = "";
-        if(option === "Each Table Insert"){
-            seeder.forEach((seed) => {
-                code += "DB::table('"+table.name+"')->insert([    \n";
-                table.columnArray.forEach((column,id) => {
-                    code +=  seed[id] ? "\t'"+column+"' => '"+ seed[id] +"'\n" : "";
-                })
-                code += "]);\n\n";
-            })
-        }
-
-        if(option === "Batch"){
-            code += PHPFunction.runSeederInBatch;
-
-            code += "$seeder = array(";
+    
+    if(table.seeder){
+        function gnSeederCode (seeder,table,option){
+            let code = "";
+            if(option === "Each Table Insert"){
                 seeder.forEach((seed) => {
-                    code += "\n\t\tarray("
-                    seed.forEach((val) => {
-                        code += "'"+val+"',"
+                    code += "DB::table('"+table.name+"')->insert([    \n";
+                    table.columnArray.forEach((column,id) => {
+                        code +=  seed[id] ? "\t'"+column+"' => '"+ seed[id] +"'\n" : "";
+                    })
+                    code += "]);\n\n";
+                })
+            }
+
+            if(option === "Batch"){
+                code += "$seeder = array(";
+                    seeder.forEach((seed) => {
+                        code += "\n\t\tarray("
+                        seed.forEach((val) => {
+                            code += "'"+val+"',"
+                        });
+                        code = code.slice(0, -1);
+                        code += "),";
                     });
                     code = code.slice(0, -1);
-                    code += "),";
+                code += "\n);\n";
+
+                code += "$column = array(";
+                table.columnArray.forEach((col) => {
+                    code += "'"+col+"',"
                 });
                 code = code.slice(0, -1);
-            code += "\n);\n";
-
-            code += "$column = array(";
-            table.columnArray.forEach((col) => {
-                code += "'"+col+"',"
-            });
-            code = code.slice(0, -1);
-            code += ");";
-            
-            code += `$tablename = "${table.name}";\n`;
-            code += `runSeederInBatch($seeder,$column,$tablename);`
-            
+                code += ");\n";
+                
+                code += `$tablename = "${table.name}";\n`;
+                code += `runSeederInBatch($seeder,$column,$tablename);`
+                
+            }
+            return code;
         }
-        return code;
-    }
-    if(table.seeder){
+        
         AppCode.seeder[table.name] = gnSeederCode(table.seeder,table,"Batch");
     }
-})
+
+    // create controller
+    if(table.controller){
+        function gnController(table){
+            let code = "";
+            
+            if(table.controller.includes('index')){
+                code += `
+                public function index()
+                {
+                    $${table.varname}s = ${table.model}::all();
+                    return Inertia::render('${table.model}s/Index', ['${table.varname}s' => $${table.varname}s]);
+                }
+                `;
+            }
+
+            if(table.controller.includes('create')){
+                let arry = "";
+                table.columnArray.forEach((col)=>{
+                    arry += `\t\t\t  '${col}' => $request['${col}'],\n`
+                });
+
+                code += `
+                public function create()
+                {
+                    return Inertia::render('${table.model}s/Create');
+                }
+
+                public function store(Request $request)
+                {
+                    ${table.model}::create([\n${arry}                    ]);
+                }
+                
+                `
+            }
+            if(table.controller.includes('edit')){
+                code += `
+                public function edit($id)
+                {
+                    $${table.varname} = ${table.model}::find($id);
+                    return Inertia::render('${table.model}s/Edit', [
+                        '${table.varname}' => $${table.varname}
+                    ]);
+                }
+                `;
+                code += `
+                public function update(Request $request, $id)
+                {
+                    $${table.varname} = ${table.model}::find($id);\n`;
+                
+                table.columnArray.forEach((col)=>{
+                    code += ` \t\t    $${table.varname}->${col} = $request->${col};\n`
+                })
+
+                code += `  
+                    $${table.varname}->update();
+                    return Redirect::route('${table.varname}.index');
+                }
+                `;
+            }
+            if(table.controller.includes('delete')){
+                code +=`
+                public function destroy(${table.model} $${table.varname})
+                {
+                    $${table.varname}->delete();
+                    return Redirect::back()->with('message', '${table.model} deleted.');
+                }
+                `;
+            }
+
+            return code;
+        }
+        AppCode.controller[table.name] = gnController(table);
+    }
+    // create artisan command
+    (function(table){
+        AppCode.artisan['All'] = (AppCode.artisan['All']?AppCode.artisan['All']:"") +"php artisan make:model "+table.model+" -c && \n";
+    })(table);
+
+    (function(table){
+        var cy = "route";
+        AppCode[cy] = (AppCode[cy] || {});
+        AppCode[cy]['All'] = (AppCode[cy]['All'] || "") + `
+        Route::resource('${table.varname}', ${table.model}Controller::class, [
+            'only' => ${arrToPHPString(table[cy])}
+        ]);
+        `;
+    })(table);
+
+    (function(table){
+        var cy = "navlink";
+        AppCode[cy] = (AppCode[cy] || {});
+        AppCode[cy]['All'] = (AppCode[cy]['All'] || "") + `
+        <NavLink href={route('${table.varname}.index')} active={route().current('${table.varname}.index')}>
+            ${table.model}
+        </NavLink>
+        `;
+    })(table); 
+    
+    if(table.factory){
+        (function(table){
+            var cy = "factory";
+            var cx = table.name;
+            AppCode[cy] = (AppCode[cy] || {});
+
+            let pullList = "\n";
+            let facCode = "\n\t\t\t[\n";
+            table.columnArray.forEach((col) => {
+                if(FactoryFormatList[col] === "getRandom"){
+                    let ob = col.split('_');
+                    pullList += `\t\t$${ob[0]}s = DB::table('${ob[0]}')->pluck('${ob[1]}');\n`;
+                    facCode += `\t\t\t\t'${col}' => ` +`$${ob[0]}s->random(),\n`;
+                }else if(FactoryFormatList[col]){
+                    facCode += `\t\t\t\t'${col}' => ` +"fake()->"+FactoryFormatList[col]+",\n";
+                }else{
+                    console.log("missing column in factory : "+col);
+                }
+                
+            })
+            facCode += "\t\t\t]"
+
+            AppCode[cy][cx] = (AppCode[cy][cx] || "") + `
+                ${pullList}
+                for ($x = 1; $x <= ${table.factory}; $x++) {
+                    $arr = ${facCode};
+                    DB::table('${table.name}')->insert($arr); 
+                }
+            `;
+        })(table); 
+    }
+
+
+});
+
+console.log(AppCode.navlink.All);
+
+function arrToPHPString(arr){
+    let str = "[";
+    arr.forEach((ax) => {str += "'"+ax+"',"});
+    str = str.slice(0, -1);
+    str += "]"
+    return str;
+}
+
+function capitalize(string) {
+  return string.charAt(0).toUpperCase() + string.slice(1);
+}
