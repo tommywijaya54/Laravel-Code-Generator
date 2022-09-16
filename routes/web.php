@@ -28,4 +28,32 @@ Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-require __DIR__.'/auth.php';
+
+
+Route::middleware(['auth', 'verified'])->group(function () {
+
+    Route::resource('user', UserController::class, [
+        'only' => ['index', 'edit', 'update']
+    ]);
+
+    Route::resource('parent', CustomerParentController::class, [
+        'only' => ['index', 'edit', 'update']
+    ]);
+
+    Route::resource('student', CustomerStudentController::class, [
+        'only' => ['index', 'edit', 'update']
+    ]);
+    Route::resource('employee', EmployeeController::class, [
+        'only' => ['index', 'edit', 'update']
+    ]);
+    Route::resource('teacher', TeacherController::class, [
+        'only' => ['index']
+    ]);
+    Route::resource('advisor', AdvisorController::class, [
+        'only' => ['index']
+    ]);
+
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+});
+
+require __DIR__ . '/auth.php';
