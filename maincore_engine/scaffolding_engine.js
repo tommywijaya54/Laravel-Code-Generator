@@ -4,11 +4,7 @@ if(!ApplicationStructure){
             table: [
                 {
                     name : 'user_test',
-                    // :r = require 
-                    // :n = nullable
-                    // :f = format -> :f(string) means the column will have string format
-                    // by default will be required
-                    columns: [
+                    column: [
                         "name",
                         "email",
                         "password",
@@ -27,6 +23,8 @@ if(!ApplicationStructure){
     }
 }
 
+let AppCode = {};
+
 // Column Format List for Migration
 const AutoColumnFormatList = {
     'name' : 'string',
@@ -36,12 +34,30 @@ const AutoColumnFormatList = {
     'note' : 'text',
     'join_date' : 'date',
     'exit_date' : 'date',
+    'date' : 'date',
+    'day' : 'date',
     'relative_name' : 'string',
     'relative_phone' : 'string',
     'relative_phone' : 'text',
     'user_id' : 'integer',
     'role' : 'string',
 }
+
+const PHPFunction = {
+    runSeederInBatch:`
+function runSeederInBatch ($seeder,$column,$tablename){
+    foreach ($seeder as $seed){
+        $insert = [];
+        foreach($column as $index => $col){
+            if (isset($seed[$index])) {
+                $insert[$col] = $seed[$index];
+            }
+        }
+        DB::table($tablename)->insert($insert);
+    }
+};`
+}
+
 const AutoEngine = {
     ColumnFormatList : AutoColumnFormatList,
     process : {
@@ -56,91 +72,103 @@ const AutoEngine = {
             c.format = ColumnString.includes(":f");
             
             if(c.format){
-                // c.type = 
+                c.type = (ColumnString.split(":f-")[1]).split(":")[0];
+            }else if(c.name.includes("_id")){
+                c.type = 'integer';
+            }else if(c.name.includes("_date")){
+                c.type = 'date';
             }else{
                 c.type = AutoColumnFormatList[c.name] ? AutoColumnFormatList[c.name] : 'string';
             }
 
             return c;
+        },
+        database : (Database) => {
+            let NewDatabase = {...Database};
+            // adding column array in table;
+            NewDatabase.table.forEach(function(table){
+                table.columnArray = table.column.map(function(c){
+                    return c.split(":")[0];
+                })
+                return table;
+            });
+
+            return NewDatabase;
         }
     }
 }
-const Database_Structure = ApplicationStructure.database;
-const Tables = Database_Structure.table;
-let AppCode = {};
+
+const Database = AutoEngine.process.database(ApplicationStructure.database);
+const Tables = Database.table;
 
 // Process table
 AppCode = {
-    migration:{}
+    migration:{},
+    seeder:{},
+    factory:{},
 }
 
+// Create Migration & Seeder Code
 Tables.forEach(function(table){
-    // Create Migration Code
-    let MigrationCode = "";
-    MigrationCode += "Schema::create('"+table.name+"', function (Blueprint $table) {  \n";
-    MigrationCode += "\t$table->id();  \n";
-
-    table.columns.forEach(function(column){
-        const c = AutoEngine.process.column(column);
-
-        MigrationCode += "\t$table->"+c.type+"('"+c.name+"')";
-        MigrationCode += c.nullable ? "->nullable()" : "";
-        MigrationCode += "; \n"
-
-    });
-    
-    MigrationCode += "\t$table->integer('created_by')->nullable();  \n";
-    MigrationCode += "\t$table->timestamps();  \n";
-    MigrationCode += "});  \n";
-    
-    AppCode.migration[table.name] = MigrationCode;
-})
-
-console.log(AppCode);
-
-function ShowToHTML(AppCode){
-    const App = window.document.getElementById('app');
-
-    // for table or migration;
-    const migrate_row = document.createElement('div');
-    migrate_row.className = "migrate-table";
-    const migrate_row_heading = document.createElement('h1');
-    migrate_row_heading.innerText = "Code for migrate : table";
-    migrate_row.appendChild(migrate_row_heading);
-
-    
-    for (let table_name in AppCode.migration) {
-        const code = AppCode.migration[table_name];
-        
-        const row = document.createElement("div");
-        row.className = "row";
-
-        const heading = document.createElement("h2");
-        heading.innerHTML = table_name;
-        
-        const pre_code_ID = table_name+"_code"
-        const pre = document.createElement("pre");        
-        pre.id = pre_code_ID;
-        pre.innerHTML = code;
-
-        const copy_button = document.createElement("button");
-        copy_button.innerText = "Copy to Clipboard";
-        copy_button.addEventListener('click', function () {
-            copy_to_clipboard(pre_code_ID)
+    // Code for Migration
+    function gnMigrateCode (table) {
+        let MigrationCode = "";
+        MigrationCode += "Schema::create('"+table.name+"', function (Blueprint $table) {  \n";
+        MigrationCode += "\t$table->id();  \n";
+        table.column.forEach(function(column){
+            const c = AutoEngine.process.column(column);
+            MigrationCode += "\t$table->"+c.type+"('"+c.name+"')";
+            MigrationCode += c.nullable ? "->nullable()" : "";
+            MigrationCode += "; \n"
         });
-
-        row.appendChild(heading);
-        row.appendChild(pre);
-        row.appendChild(copy_button);
-        
-        migrate_row.appendChild(row);
+        MigrationCode += "\t$table->integer('created_by')->nullable();  \n";
+        MigrationCode += "\t$table->timestamps();  \n";
+        MigrationCode += "});  \n";
+        return MigrationCode;
     }
-    App.appendChild(migrate_row);
-}
-ShowToHTML(AppCode);
+    AppCode.migration[table.name] = gnMigrateCode(table);
 
+    function gnSeederCode (seeder,table,option){
+        let code = "";
+        if(option === "Each Table Insert"){
+            seeder.forEach((seed) => {
+                code += "DB::table('"+table.name+"')->insert([    \n";
+                table.columnArray.forEach((column,id) => {
+                    code +=  seed[id] ? "\t'"+column+"' => '"+ seed[id] +"'\n" : "";
+                })
+                code += "]);\n\n";
+            })
+        }
 
-function copy_to_clipboard(elementID) {
-    const copyText = document.getElementById(elementID);
-    navigator.clipboard.writeText(copyText.innerText);
-}
+        if(option === "Batch"){
+            code += PHPFunction.runSeederInBatch;
+
+            code += "$seeder = array(";
+                seeder.forEach((seed) => {
+                    code += "\n\t\tarray("
+                    seed.forEach((val) => {
+                        code += "'"+val+"',"
+                    });
+                    code = code.slice(0, -1);
+                    code += "),";
+                });
+                code = code.slice(0, -1);
+            code += "\n);\n";
+
+            code += "$column = array(";
+            table.columnArray.forEach((col) => {
+                code += "'"+col+"',"
+            });
+            code = code.slice(0, -1);
+            code += ");";
+            
+            code += `$tablename = "${table.name}";\n`;
+            code += `runSeederInBatch($seeder,$column,$tablename);`
+            
+        }
+        return code;
+    }
+    if(table.seeder){
+        AppCode.seeder[table.name] = gnSeederCode(table.seeder,table,"Batch");
+    }
+})

@@ -1,12 +1,12 @@
-body{
+body {
     font-family: Arial, Helvetica, sans-serif;
 }
+
 pre {
     padding: 1em;
     border: 1px solid #ddd;
     border-radius: 10px;
     display: block;
-    
     white-space: pre-wrap;
     /* Since CSS 2.1 */
     white-space: -moz-pre-wrap;
@@ -17,4 +17,78 @@ pre {
     /* Opera 7 */
     word-wrap: break-word;
     /* Internet Explorer 5.5+ */
+}
+
+.row {
+    background-color: #fff;
+    padding: 1em 2em 2em 1.5em;
+    margin-bottom: 2em;
+    border-radius: 0.75em;
+    --tw-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 transparent), var(--tw-ring-shadow, 0 0 transparent), var(--tw-shadow);
+    position: relative;
+}
+
+.row :is(h1, h2) {
+    margin-top: 0px;
+}
+
+div#app {
+    padding: 1em 2em 1em 2em;
+}
+
+body {
+    padding: 0;
+    margin: 0;
+    background-color: #f5f5f5;
+}
+
+h1 {
+    font-size: medium;
+}
+
+.code-box {
+    position: relative;
+    padding: 2em;
+    background-color: #172b5d;
+    margin-bottom: 2em;
+    border-radius: 0.75em;
+    --tw-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: var(--tw-ring-offset-shadow, 0 0 transparent), var(--tw-ring-shadow, 0 0 transparent), var(--tw-shadow);
+}
+
+.code-box .row-header {
+    color: white;
+}
+
+.code-box .row-header > button {
+    position: absolute;
+    right: 2.5em;
+    top: 2em;
+    padding: 0.75em;
+    background-color: #afbaf5;
+    border: 1px solid #293973;
+    border-radius: 0.5em;
+}
+
+.code-box .row > button {
+    position: absolute;
+    right: 2.5em;
+    top: 1.5em;
+    border: 1px solid#dddddd;
+    border-radius: 5px;
+    padding: 5px 10px;
+    margin: 0px
+}
+
+.clickable {
+    cursor: pointer;
+}
+
+.clickable:hover {
+    color: aqua;
+}
+
+div.hide-row .row {
+    display: none;
 }
