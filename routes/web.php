@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\StudentController;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\RegistrationController;
+
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -31,29 +37,29 @@ Route::get('/dashboard', function () {
 
 
 Route::middleware(['auth', 'verified'])->group(function () {
-
-    Route::resource('user', UserController::class, [
-        'only' => ['index', 'edit', 'update']
-    ]);
-
-    Route::resource('parent', CustomerParentController::class, [
-        'only' => ['index', 'edit', 'update']
-    ]);
-
-    Route::resource('student', CustomerStudentController::class, [
-        'only' => ['index', 'edit', 'update']
-    ]);
-    Route::resource('employee', EmployeeController::class, [
-        'only' => ['index', 'edit', 'update']
-    ]);
-    Route::resource('teacher', TeacherController::class, [
-        'only' => ['index']
-    ]);
-    Route::resource('advisor', AdvisorController::class, [
+    Route::resource('users', UsersController::class, [
         'only' => ['index']
     ]);
 
-    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::resource('user_test', User_testController::class, [
+        'only' => ['index', 'create', 'store', 'edit', 'update', 'delete']
+    ]);
+
+    Route::resource('schedule', ScheduleController::class, [
+        'only' => ['index', 'create', 'store', 'edit', 'update', 'delete']
+    ]);
+
+    Route::resource('student', StudentController::class, [
+        'only' => ['index', 'create', 'store', 'edit', 'update', 'delete']
+    ]);
+
+    Route::resource('branch', BranchController::class, [
+        'only' => ['index', 'create', 'store', 'edit', 'update', 'delete']
+    ]);
+
+    Route::resource('registration', RegistrationController::class, [
+        'only' => ['index', 'create', 'store', 'edit', 'update', 'delete']
+    ]);
 });
 
 require __DIR__ . '/auth.php';
