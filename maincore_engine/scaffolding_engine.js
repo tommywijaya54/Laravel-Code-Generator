@@ -28,7 +28,7 @@ let AppCode = {};
 // Column Format List for Migration
 function gnFormatList(List){
     let Ob = {};
-    for (var key in List) {
+    for (let key in List) {
         const val = List[key];
         Ob[key] = val.split(":")[0];
     };
@@ -36,9 +36,9 @@ function gnFormatList(List){
 };
 function gnFactoryFormatList(List){
     let Ob = {};
-    for (var key in List) {
+    for (let key in List) {
         const val = List[key];
-        var factoryCode = val.split(":")[1];
+        let factoryCode = val.split(":")[1];
                 
         if(factoryCode.includes('getRandom')){
                 
@@ -99,9 +99,14 @@ const AutoEngine = {
             NewDatabase.table.forEach(function(table){
                 table.model = capitalize(table.name);
                 table.varname = table.name;
+                table.tablename = table.name+"s";
+                table.entityname = table.name;
+
+                if(table.column){
                 table.columnArray = table.column.map(function(c){
                     return c.split(":")[0];
                 })
+                }
 
                 table.route = [];
                 table.controller.forEach((fn)=>{
@@ -129,6 +134,7 @@ const Tables = Database.table;
 AppCode = {
     migration:{},
     seeder:{},
+    factory:{},
     controller:{},
     artisan:{}
 }
@@ -136,30 +142,31 @@ AppCode = {
 // Create Migration & Seeder Code
 Tables.forEach(function(table){
     // Code for Migration
-    function gnMigrateCode (table) {
-        let MigrationCode = "";
-        MigrationCode += "Schema::create('"+table.name+"', function (Blueprint $table) {  \n";
-        MigrationCode += "\t$table->id();  \n";
-        table.column.forEach(function(column){
-            const c = AutoEngine.process.column(column);
-            MigrationCode += "\t$table->"+c.type+"('"+c.name+"')";
-            MigrationCode += c.nullable ? "->nullable()" : "";
-            MigrationCode += "; \n"
-        });
-        MigrationCode += "\t$table->integer('created_by')->nullable();  \n";
-        MigrationCode += "\t$table->timestamps();  \n";
-        MigrationCode += "});  \n";
-        return MigrationCode;
+    if(table.column){
+        function gnMigrateCode (table) {
+            let MigrationCode = "";
+            MigrationCode += "Schema::create('"+table.tablename+"', function (Blueprint $table) {  \n";
+            MigrationCode += "\t$table->id();  \n";
+            table.column.forEach(function(column){
+                const c = AutoEngine.process.column(column);
+                MigrationCode += "\t$table->"+c.type+"('"+c.name+"')";
+                MigrationCode += c.nullable ? "->nullable()" : "";
+                MigrationCode += "; \n"
+            });
+            MigrationCode += "\t$table->integer('created_by')->nullable();  \n";
+            MigrationCode += "\t$table->timestamps();  \n";
+            MigrationCode += "});  \n";
+            return MigrationCode;
+        }
+        AppCode.migration[table.name] = gnMigrateCode(table);
     }
-    AppCode.migration[table.name] = gnMigrateCode(table);
-
     
     if(table.seeder){
         function gnSeederCode (seeder,table,option){
             let code = "";
             if(option === "Each Table Insert"){
                 seeder.forEach((seed) => {
-                    code += "DB::table('"+table.name+"')->insert([    \n";
+                    code += "DB::table('"+table.tablename+"')->insert([    \n";
                     table.columnArray.forEach((column,id) => {
                         code +=  seed[id] ? "\t'"+column+"' => '"+ seed[id] +"'\n" : "";
                     })
@@ -179,15 +186,16 @@ Tables.forEach(function(table){
                     });
                     code = code.slice(0, -1);
                 code += "\n);\n";
-
+                
+                if(table.column){
                 code += "$column = array(";
                 table.columnArray.forEach((col) => {
                     code += "'"+col+"',"
                 });
                 code = code.slice(0, -1);
                 code += ");\n";
-                
-                code += `$tablename = "${table.name}";\n`;
+                }
+                code += `$tablename = "${table.tablename}";\n`;
                 code += `runSeederInBatch($seeder,$column,$tablename);`
                 
             }
@@ -207,7 +215,7 @@ Tables.forEach(function(table){
                 public function index()
                 {
                     $${table.varname}s = ${table.model}::all();
-                    return Inertia::render('${table.model}s/Index', ['${table.varname}s' => $${table.varname}s]);
+                    return Inertia::render('${table.model}/Index', ['${table.varname}s' => $${table.varname}s]);
                 }
                 `;
             }
@@ -221,7 +229,7 @@ Tables.forEach(function(table){
                 code += `
                 public function create()
                 {
-                    return Inertia::render('${table.model}s/Create');
+                    return Inertia::render('${table.model}/Create');
                 }
 
                 public function store(Request $request)
@@ -236,7 +244,7 @@ Tables.forEach(function(table){
                 public function edit($id)
                 {
                     $${table.varname} = ${table.model}::find($id);
-                    return Inertia::render('${table.model}s/Edit', [
+                    return Inertia::render('${table.model}/Edit', [
                         '${table.varname}' => $${table.varname}
                     ]);
                 }
@@ -275,18 +283,24 @@ Tables.forEach(function(table){
         AppCode.artisan['All'] = (AppCode.artisan['All']?AppCode.artisan['All']:"") +"php artisan make:model "+table.model+" -c && \n";
     })(table);
 
+
+    
     (function(table){
-        var cy = "route";
+        let cy = "route";
+
         AppCode[cy] = (AppCode[cy] || {});
         AppCode[cy]['All'] = (AppCode[cy]['All'] || "") + `
         Route::resource('${table.varname}', ${table.model}Controller::class, [
             'only' => ${arrToPHPString(table[cy])}
         ]);
         `;
+        AppCode[cy]['Use'] = (AppCode[cy]['Use'] || "");
+        AppCode[cy]['Use'] += "use App\\Http\\Controllers\\"+table.model+"Controller;\n";
     })(table);
 
+
     (function(table){
-        var cy = "navlink";
+        let cy = "navlink";
         AppCode[cy] = (AppCode[cy] || {});
         AppCode[cy]['All'] = (AppCode[cy]['All'] || "") + `
         <NavLink href={route('${table.varname}.index')} active={route().current('${table.varname}.index')}>
@@ -297,8 +311,8 @@ Tables.forEach(function(table){
     
     if(table.factory){
         (function(table){
-            var cy = "factory";
-            var cx = table.name;
+            let cy = "factory";
+            let cx = table.name;
             AppCode[cy] = (AppCode[cy] || {});
 
             let pullList = "\n";
@@ -306,7 +320,7 @@ Tables.forEach(function(table){
             table.columnArray.forEach((col) => {
                 if(FactoryFormatList[col] === "getRandom"){
                     let ob = col.split('_');
-                    pullList += `\t\t$${ob[0]}s = DB::table('${ob[0]}')->pluck('${ob[1]}');\n`;
+                    pullList += `\t\t$${ob[0]}s = DB::table('${ob[0]}s')->pluck('${ob[1]}');\n`;
                     facCode += `\t\t\t\t'${col}' => ` +`$${ob[0]}s->random(),\n`;
                 }else if(FactoryFormatList[col]){
                     facCode += `\t\t\t\t'${col}' => ` +"fake()->"+FactoryFormatList[col]+",\n";
@@ -321,7 +335,7 @@ Tables.forEach(function(table){
                 ${pullList}
                 for ($x = 1; $x <= ${table.factory}; $x++) {
                     $arr = ${facCode};
-                    DB::table('${table.name}')->insert($arr); 
+                    DB::table('${table.tablename}')->insert($arr); 
                 }
             `;
         })(table); 
