@@ -56,7 +56,7 @@ return new class extends Migration
         });
 
 
-        Schema::create('branchs', function (Blueprint $table) {
+        Schema::create('branches', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('address');
@@ -136,20 +136,20 @@ return new class extends Migration
                     'email' => fake()->safeEmail(),
                     'status' => fake()->text(10),
                 ];
-            DB::table('branchs')->insert($arr);
+            DB::table('branches')->insert($arr);
         }
 
 
 
 
         $students = DB::table('students')->pluck('id');
-        $branchs = DB::table('branchs')->pluck('id');
+        $branches = DB::table('branches')->pluck('id');
 
         for ($x = 1; $x <= 50; $x++) {
             $arr =
                 [
                     'student_id' => $students->random(),
-                    'branch_id' => $branchs->random(),
+                    'branch_id' => $branches->random(),
                     'reference' => fake()->text(50),
                     'cashback' => fake()->randomElement([100000, 280000, 300000]),
                     'status' => fake()->text(10),
