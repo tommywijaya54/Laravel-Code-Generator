@@ -16,8 +16,6 @@ return new class extends Migration
      */
     public function up()
     {
-
-
         function runSeederInBatch($seeder, $column, $tablename)
         {
             foreach ($seeder as $seed) {
@@ -31,17 +29,8 @@ return new class extends Migration
             }
         };
 
-        Schema::create('user_test', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email');
-            $table->string('password');
-            $table->string('role')->nullable();
-            $table->integer('created_by')->nullable();
-            $table->timestamps();
-        });
 
-        Schema::create('schedule', function (Blueprint $table) {
+        Schema::create('schedules', function (Blueprint $table) {
             $table->id();
             $table->date('day');
             $table->string('time_slot');
@@ -53,19 +42,8 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('registration', function (Blueprint $table) {
-            $table->id();
-            $table->integer('student_id');
-            $table->integer('branch_id');
-            $table->string('reference');
-            $table->string('cashback');
-            $table->string('status')->nullable();
-            $table->string('remarks')->nullable();
-            $table->integer('created_by')->nullable();
-            $table->timestamps();
-        });
 
-        Schema::create('student', function (Blueprint $table) {
+        Schema::create('students', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email');
@@ -77,7 +55,8 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('branch', function (Blueprint $table) {
+
+        Schema::create('branchs', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('address');
@@ -89,20 +68,26 @@ return new class extends Migration
         });
 
 
+        Schema::create('registrations', function (Blueprint $table) {
+            $table->id();
+            $table->integer('student_id');
+            $table->integer('branch_id');
+            $table->string('reference');
+            $table->integer('cashback');
+            $table->string('status')->nullable();
+            $table->string('remarks')->nullable();
+            $table->integer('created_by')->nullable();
+            $table->timestamps();
+        });
+
         $seeder = array(
-            array(
-                fake()->name(),
-                fake()->safeEmail(),
-                fake()->text(),
-                fake()->randomElement(['admin', 'user']),
-            ),
             array('Tommy Saputra Wijaya', 'tommy.wijaya54@yahoo.com', '$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi'),
             array('Eko Saputra Wijaya', 'eko.saputra.wijaya@gmail.com', '$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi'),
             array('Shinta Purnama Sari', 'shinta.purnama.sari@outlook.com', '$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi'),
             array('Dewi Puspita Sari', 'dewi.puspita.sari@email.com', '$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi')
         );
-        $column = array('name', 'email', 'password', 'role');
-        $tablename = "user_test";
+        $column = array('name', 'email', 'password');
+        $tablename = "users";
         runSeederInBatch($seeder, $column, $tablename);
 
 
@@ -113,13 +98,14 @@ return new class extends Migration
                 [
                     'day' => fake()->date(),
                     'time_slot' => fake()->time(),
-                    'subject' => fake()->text(),
-                    'classroom' => fake()->text(),
+                    'subject' => fake()->sentence(3),
+                    'classroom' => fake()->sentence(1),
                     'duration' => fake()->randomElement(["1", "1.5", "2"]),
                     'date' => fake()->date(),
                 ];
-            DB::table('schedule')->insert($arr);
+            DB::table('schedules')->insert($arr);
         }
+
 
 
 
@@ -134,8 +120,9 @@ return new class extends Migration
                     'join_date' => fake()->date(),
                     'exit_date' => fake()->date(),
                 ];
-            DB::table('student')->insert($arr);
+            DB::table('students')->insert($arr);
         }
+
 
 
 
@@ -147,24 +134,28 @@ return new class extends Migration
                     'address' => fake()->address(),
                     'phone' => fake()->phoneNumber(),
                     'email' => fake()->safeEmail(),
-                    'status' => fake()->text(),
+                    'status' => fake()->text(10),
                 ];
-            DB::table('branch')->insert($arr);
+            DB::table('branchs')->insert($arr);
         }
 
-        $students = DB::table('student')->pluck('id');
-        $branchs = DB::table('branch')->pluck('id');
+
+
+
+        $students = DB::table('students')->pluck('id');
+        $branchs = DB::table('branchs')->pluck('id');
+
         for ($x = 1; $x <= 50; $x++) {
             $arr =
                 [
                     'student_id' => $students->random(),
                     'branch_id' => $branchs->random(),
-                    'reference' => fake()->text(),
+                    'reference' => fake()->text(50),
                     'cashback' => fake()->randomElement([100000, 280000, 300000]),
-                    'status' => fake()->text(),
-                    'remarks' => fake()->text(),
+                    'status' => fake()->text(10),
+                    'remarks' => fake()->text(10),
                 ];
-            DB::table('registration')->insert($arr);
+            DB::table('registrations')->insert($arr);
         }
     }
 
