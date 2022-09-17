@@ -35,10 +35,9 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 
-
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('users', UsersController::class, [
-        'only' => ['index']
+    Route::resource('user', UserController::class, [
+        'only' => ['index', 'edit']
     ]);
 
     Route::resource('user_test', User_testController::class, [
