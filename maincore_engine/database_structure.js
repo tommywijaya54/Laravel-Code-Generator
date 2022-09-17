@@ -11,6 +11,21 @@ const ApplicationStructure = {
     database:{
         table: [
             {
+                name : 'user',
+                column: [
+                    "name",
+                    "email",
+                    "password"
+                ],
+                seeder: [
+                    ['Tommy Saputra Wijaya', 'tommy.wijaya54@yahoo.com','$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi'],
+                    ['Eko Saputra Wijaya', 'eko.saputra.wijaya@gmail.com','$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi'],
+                    ['Shinta Purnama Sari', 'shinta.purnama.sari@outlook.com','$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi'],
+                    ['Dewi Puspita Sari', 'dewi.puspita.sari@email.com','$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi']
+                ],
+                controller: ["index"]
+            },
+            /* {
                 name : 'user_test',
                 column: [
                     "name",
@@ -25,7 +40,7 @@ const ApplicationStructure = {
                     ['Dewi Puspita Sari', 'dewi.puspita.sari@email.com','$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi']
                 ],
                 controller: ["index","create","edit","delete"]
-            },
+            }, */
             {
                 name : 'schedule',
                 column: [
@@ -37,7 +52,8 @@ const ApplicationStructure = {
                     "date"
                 ],
                 controller: ["index","create","edit","delete"],
-                factory:20
+                factory:20,
+                view:["index:simple"]
             },
             {
                 name : 'student',
@@ -90,7 +106,7 @@ const AFormatList = {
     'phone' : 'string:phoneNumber()',
     'address' : 'string:address()',
     'password' : 'string:text(20)',
-    'note' : 'text:text()',
+    'note' : 'text:text(50)',
     'join_date' : 'date:date()',
     'exit_date' : 'date:date()',
     'date' : 'date:date()',
@@ -101,14 +117,14 @@ const AFormatList = {
     'user_id' : 'integer:getRandom-user->id',
     'role' : 'string:getRandom-role->role',
     'time_slot':'string:time()',
-    'subject':'string:text()',
-    'classroom':'string:text()',
+    'subject':'string:sentence(3)',
+    'classroom':'string:sentence(1)',
     'duration':'string:randomElement(["1","1.5","2"])',
     'student_id':'integer:getRandom',
     'branch_id':'integer:getRandom',
-    'reference':'string:text()',
+    'reference':'string:text(50)',
     'cashback':'integer:randomElement([100000,280000,300000])',
-    'status':'string:text()',
-    'remarks':'string:text()',
+    'status':'string:text(10)',
+    'remarks':'string:text(10)',
     'email':'string:safeEmail()'
 }
