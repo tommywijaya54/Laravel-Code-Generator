@@ -4,19 +4,23 @@ namespace App\Http\Controllers;
 
 use App\Models\Schedule;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
+
 
 class ScheduleController extends Controller
 {
+    public $entity_name = "schedule";
+    public $Entity_Name = "Schedule";
 
     public function index()
     {
-        $schedules = Schedule::all();
+        $data = \App\Models\Schedule::all();
         return Inertia::render('Simple/Index', [
-            'pagetitle' => "Schedule List",
-            'data' => $schedules,
-            'route' => 'schedule.edit',
-            'view' => "Day,Subject,Classroom,Duration"
+            'pagetitle' => $this->Entity_Name . " List",
+            'data' => $data,
+            'route' => $this->entity_name . '.edit',
+            'view' => "Day,Subject,Duration"
         ]);
     }
 
@@ -49,6 +53,7 @@ class ScheduleController extends Controller
     public function update(Request $request, $id)
     {
         $schedule = Schedule::find($id);
+
         $schedule->day = $request->day;
         $schedule->time_slot = $request->time_slot;
         $schedule->subject = $request->subject;

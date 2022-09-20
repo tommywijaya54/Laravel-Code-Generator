@@ -69,9 +69,9 @@ function ShowToHTML(AppCode){
         createCodeHeader(BoxID,code_box);
         code_box.appendChild(createCodeRow(PHPFunction.runSeederInBatch,"php_function",BoxID));
         
-    })()
-       
+    })()   
 }
+
 ShowToHTML(AppCode);
 
 function copy_to_clipboard(elementID) {

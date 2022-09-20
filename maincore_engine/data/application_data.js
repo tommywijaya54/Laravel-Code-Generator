@@ -1,13 +1,4 @@
-/** 
- *  Columns short hand 
- *  entityname:[shorthand] 
- *  example = email:n:f-email
-    :r = require (by default it has required)
-    :n = nullable
-    :f-[column_type] = format -> :f-string means the column will have string format
-*/
-
-const ApplicationStructure = {
+let ApplicationStructure = {
     database:{
         table: [
             {
@@ -24,7 +15,7 @@ const ApplicationStructure = {
                     ['Dewi Puspita Sari', 'dewi.puspita.sari@email.com','$2y$10$5jVX3q8h6GnAqwN9KR9sVekmwYZQh0daV5.i65bzdXJMRYi/mtMZi']
                 ],
                 controller: ["index","edit"],
-                simpleview:"Name,Email",
+                simpleview:"name,email",
                 dontIncludeOnGenerateMigrate:true
             },
 
@@ -42,8 +33,8 @@ const ApplicationStructure = {
                     'join_date',
                     'exit_date',
                     'note',
-                    'user_id',
-                    'branches_id:n:ef',
+                    'users_id',
+                    'branches_id:n',
                 ],
                 factory:30
 
@@ -52,8 +43,8 @@ const ApplicationStructure = {
             {
                 name: 'manager',
                 column: [
-                    'employee_id',
-                    'branches_id:n:ef',
+                    'employees_id',
+                    'branches_id:n',
                     'note'
                 ],
                 factory:4
@@ -66,7 +57,7 @@ const ApplicationStructure = {
                     "name",
                     "address",
                     "phone",
-                    "manager_id:n:ef",
+                    "managers_id:n",
                     "email",
                     "open_date",
                     "status:n"
@@ -104,7 +95,7 @@ const ApplicationStructure = {
             },
             
             {
-                name : 'assets', // Branch Asset
+                name : 'asset', // Branch Asset
                 column : [
                     'item_name',
                     'qty',
@@ -112,8 +103,6 @@ const ApplicationStructure = {
                     'note'
                 ]
             },
-            
-            
             
             {
                 name:'parent',
@@ -137,8 +126,8 @@ const ApplicationStructure = {
             {
                 name : 'student',
                 column: [
-                    "parent_id",
-                    "school_id",
+                    "parents_id",
+                    "schools_id",
                     "grade", // ["tka, tkb, k1, k2, Grade 1 - 12 "]
                     "name",
                     "email",
@@ -196,8 +185,8 @@ const ApplicationStructure = {
             {
                 name : 'registration',
                 column: [
-                    "student_id",
-                    "branch_id",
+                    "students_id",
+                    "branches_id",
                     "date", //registration
                     "reference", // note
                     "cashback", // untuk transfer ke temen  
@@ -211,9 +200,9 @@ const ApplicationStructure = {
             {
                 name: 'registrationitem', // item list of registration
                 column : [
-                    'registration_id',
-                    'pricelist_id:n',
-                    'promolist_id:n',
+                    'registrations_id',
+                    'pricelists_id:n',
+                    'promolists_id:n',
                     'charges', // ["Late Payment Charges", "Adjustment Tagihan"]
                     'price:n',
                     'discount_amount:n'
@@ -223,7 +212,7 @@ const ApplicationStructure = {
             {
                 name:'salary',
                 column: [
-                    'employee_id',
+                    'employees_id',
                     'amount',
                     'start_date',
                     'end_date',
@@ -236,7 +225,7 @@ const ApplicationStructure = {
             {
                 name: 'advisor',
                 column: [
-                    'employee_id',
+                    'employees_id',
                     'note'
                 ]
             },
@@ -244,7 +233,7 @@ const ApplicationStructure = {
             {
                 name: 'teacher',
                 column: [
-                    'employee_id',
+                    'employees_id',
                     'subject',
                     'note'
                 ]
@@ -253,7 +242,7 @@ const ApplicationStructure = {
             {
                 name: 'subject', // Subject Untuk Teacher
                 column: [
-                    'teacher_id',
+                    'teachers_id',
                     'subject',
                     'school'
                 ]
@@ -262,7 +251,7 @@ const ApplicationStructure = {
             {
                 name : 'employeerole',
                 column:[
-                    'employee_id',
+                    'employees_id',
                     'role_title',
                     'start_date:n',
                     'end_date:n'
@@ -299,45 +288,23 @@ const ApplicationStructure = {
                 simpleview:"Day,Subject,Duration"
             }
         ]
+    },
+    default : {
+        controller : ["index,edit"] ,
+        factory : 10
     }
 }
 
+// Adding Auto Value for 
+// controller   : ["index,edit"] 
+// factory      : 10
+
+const AS_Default = ApplicationStructure.default;
 
 
-
-const ColumnList = {
-    'name'              : 'string:name()',
-    'phone'             : 'string:phoneNumber()',
-    'address'           : 'string:address()',
-    'password'          : 'string:text(20)',
-    'note'              : 'text:text(50)',
-    'join_date'         : 'date:date()',
-    'exit_date'         : 'date:date()',
-    'date'              : 'date:date()',
-    'day'               : 'date:date()',
-    'relative_name'     : 'string:name()',
-    'relative_phone'    : 'string:phoneNumber()',
-    'relative_note'     : 'text:text(50)',
-    'time_slot'         : 'string:time()',
-    'subject'           : 'string:sentence(3)',
-    'classroom'         : 'string:sentence(1)',
-    'duration'          : 'string:randomElement(["1","1.5","2"])',
-    'reference'         : 'string:text(50)',
-    'cashback'          : 'integer:randomElement([100000,280000,300000])',
-    'status'            : 'string:text(10)',
-    'remarks'           : 'string:text(10)',
-    'email'             : 'string:safeEmail()',
-    'open_date'         : 'date:date()',
-    'grade'             : 'date:date()',
-    'exit_reason'       : 'text:text(20)',
-    'birth_date'        : 'date:date()',
-    'type'              : 'string:sentence(4)',
-    'health_condition'  : 'string:sentence(4)',
-    'manager_id'        : 'integer:getRandom',
-    'student_id'        : 'integer:getRandom',
-    'branch_id'         : 'integer:getRandom',
-    'parent_id'         : 'integer:getRandom',
-    'school_id'         : 'integer:getRandom',
-    'user_id'           : 'integer:getRandom-user->id',
-    'role'              : 'string:getRandom-role->role'
-}
+(table => {
+    table.forEach((table) => {
+        table.controller = table.controller || AS_Default.controller;
+        table.factory = table.factory || AS_Default.factory;
+    });
+})(ApplicationStructure.database.table)
